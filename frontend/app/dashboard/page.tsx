@@ -7,6 +7,7 @@ import { typingService, TypingTestResultResponse } from '@/services/typingServic
 import { UserStats } from '@/types/history';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { EmptyState } from '@/components/dashboard/EmptyState';
+import { PerformanceChart } from '@/components/dashboard/PerformanceChart';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -24,7 +25,7 @@ export default function DashboardPage() {
     try {
       const [fetchedStats, historyData] = await Promise.all([
         typingService.getStats().catch(() => null),
-        typingService.getHistory({ page: 1, page_size: 5, sort_by: 'newest' }).catch(() => null),
+        typingService.getHistory({ page: 1, page_size: 15, sort_by: 'newest' }).catch(() => null),
       ]);
 
       if (fetchedStats) {
@@ -173,52 +174,64 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* Recent Tests Section */}
-      <div className="space-y-4 pt-2">
-        <Card className="border-slate-100 shadow-soft">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg">Recent Tests</CardTitle>
-            <Link href="/history">
-              <Button variant="ghost" size="sm" rightIcon={<ArrowRight className="w-4 h-4" />}>
-                View Full History
-              </Button>
-            </Link>
-          </CardHeader>
+      {/* Charts and Recent Tests Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 pt-2">
+        {/* Performance Chart */}
+        <div className="lg:col-span-2">
+          {loading ? (
+            <Skeleton className="h-[400px] w-full rounded-2xl" />
+          ) : (
+            <PerformanceChart data={[...recentTests].reverse()} />
+          )}
+        </div>
 
-          <CardContent>
-            {loading ? (
-              <div className="space-y-2">
-                <Skeleton className="h-12 w-full rounded-xl" />
-                <Skeleton className="h-12 w-full rounded-xl" />
-              </div>
-            ) : recentTests.length > 0 ? (
-              <div className="divide-y divide-slate-100">
-                {recentTests.map((test) => (
-                  <div key={test.id} className="py-3 flex items-center justify-between text-sm">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-9 h-9 rounded-xl bg-primary-50 text-primary flex items-center justify-center font-bold">
-                        {test.wpm}
+        {/* Recent Tests Section */}
+        <div className="lg:col-span-1">
+          <Card className="border-slate-100 shadow-soft h-full dark:border-dark-border">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-lg text-text dark:text-dark-text">Recent Tests</CardTitle>
+              <Link href="/history">
+                <Button variant="ghost" size="sm" rightIcon={<ArrowRight className="w-4 h-4" />}>
+                  All
+                </Button>
+              </Link>
+            </CardHeader>
+
+            <CardContent>
+              {loading ? (
+                <div className="space-y-2 mt-4">
+                  <Skeleton className="h-12 w-full rounded-xl" />
+                  <Skeleton className="h-12 w-full rounded-xl" />
+                  <Skeleton className="h-12 w-full rounded-xl" />
+                </div>
+              ) : recentTests.length > 0 ? (
+                <div className="divide-y divide-slate-100 dark:divide-dark-border">
+                  {recentTests.slice(0, 5).map((test) => (
+                    <div key={test.id} className="py-3 flex items-center justify-between text-sm">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-9 h-9 rounded-xl bg-primary-50 dark:bg-primary-950/60 text-primary flex items-center justify-center font-bold">
+                          {test.wpm}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-text dark:text-dark-text">{test.wpm} WPM</p>
+                          <p className="text-xs text-secondary dark:text-dark-secondary">{formatDate(test.created_at)}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-semibold text-text">{test.wpm} WPM ({test.accuracy}% Acc)</p>
-                        <p className="text-xs text-secondary">{formatDate(test.created_at)} • {test.duration}s mode</p>
-                      </div>
+                      <span className="text-xs text-secondary dark:text-dark-secondary font-medium">
+                        {test.accuracy}% Acc
+                      </span>
                     </div>
-
-                    <span className="text-xs text-secondary font-medium">
-                      {test.mistakes} mistakes
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <EmptyState
-                title="No typing tests yet"
-                description="Take your first typing speed test to record your stats and track history."
-              />
-            )}
-          </CardContent>
-        </Card>
+                  ))}
+                </div>
+              ) : (
+                <EmptyState
+                  title="No tests yet"
+                  description="Take a test to see your history."
+                />
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
